@@ -13,9 +13,10 @@ lock_command = ["uv", "lock"]
 
 [release]
 checks = [
-    ["uv", "run", "ruff", "check", "src", "run_tests.py"],
-    ["uv", "run", "ruff", "format", "--check", "src", "run_tests.py"],
+    ["uv", "run", "ruff", "check", "src", "scripts", "run_tests.py"],
+    ["uv", "run", "ruff", "format", "--check", "src", "scripts", "run_tests.py"],
     ["uv", "run", "python", "run_tests.py"],
+    ["uv", "run", "python", "scripts/generate_cli_reference.py", "--check"],
     ["uv", "build"],
 ]
 commit_message = "chore(release): gearu {version}"

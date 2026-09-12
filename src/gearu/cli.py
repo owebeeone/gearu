@@ -13,6 +13,11 @@ from .models import ReleasePlan
 from .release import ReleaseManager, ReleaseOptions
 
 
+class _HelpFormatter(argparse.HelpFormatter):
+    def __init__(self, prog: str) -> None:
+        super().__init__(prog, max_help_position=24, width=88)
+
+
 def _add_release_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "version", help="explicit release version, e.g. 1.2.3 or v1.2.3"
@@ -95,17 +100,24 @@ def build_parser() -> argparse.ArgumentParser:
         prog="gearu",
         description="Make repositories ready for release.",
         epilog="Project: https://github.com/owebeeone/gearu",
+        formatter_class=_HelpFormatter,
     )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
     )
     commands = parser.add_subparsers(dest="command")
 
-    plan = commands.add_parser("plan", help="validate and display a release plan")
+    plan = commands.add_parser(
+        "plan",
+        help="validate and display a release plan",
+        formatter_class=_HelpFormatter,
+    )
     _add_release_arguments(plan)
 
     release = commands.add_parser(
-        "release", help="prepare, verify, commit, and tag a release"
+        "release",
+        help="prepare, verify, commit, and tag a release",
+        formatter_class=_HelpFormatter,
     )
     _add_release_arguments(release)
     release.add_argument(

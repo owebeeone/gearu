@@ -1,0 +1,58 @@
+site_name: Gearu
+site_description: >-
+  Prepare verified Python, Rust, and npm repository releases from an explicit
+  version.
+site_url: https://owebeeone.github.io/gearu/
+repo_url: https://github.com/owebeeone/gearu
+repo_name: owebeeone/gearu
+edit_uri: edit/main/docs/
+copyright: MIT
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: README.md
+  - Configuration: Configuration.md
+  - Release Process: ReleaseProcess.md
+  - CLI Reference: CLI.md

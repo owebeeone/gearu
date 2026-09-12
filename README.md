@@ -5,6 +5,8 @@
 Gearu is a small, explicit release-preparation tool for Python, Rust, and npm
 projects. Its name comes from Old English *gearu*: ready, prepared, or equipped.
 
+Documentation: <https://owebeeone.github.io/gearu/>
+
 Gearu takes an intended version and makes the repository mechanically ready to
 release:
 

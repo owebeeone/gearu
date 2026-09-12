@@ -56,6 +56,10 @@ Gearu never runs `cargo publish`, `npm publish`, or a Python package upload.
 Those operations remain in reviewed CI workflows with registry-scoped
 credentials or trusted publishing.
 
+The same published stable release deploys the versioned documentation source
+to GitHub Pages. Release candidates do not replace the stable documentation.
+The Documentation workflow can also deploy an explicit Git ref manually.
+
 ## Release Candidates
 
 Use a numbered release-candidate version:
