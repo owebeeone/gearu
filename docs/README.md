@@ -9,6 +9,13 @@ gearu plan 0.1.0
 gearu release 0.1.0 --push --github-release
 ```
 
+Gearu can also calculate the next semantic version explicitly:
+
+```sh
+gearu plan --bump minor
+gearu release --bump minor
+```
+
 `plan` validates and reports without changing tracked files or remote state.
 `release` works in a temporary candidate worktree, so failed checks do not
 leave the normal checkout partly prepared.

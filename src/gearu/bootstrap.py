@@ -17,8 +17,9 @@ AGENTS_BLOCK = f"""{AGENTS_START}
 - This repository uses [Gearu](https://owebeeone.github.io/gearu/) for release
   preparation.
 - Read `RELEASE.md` before planning or performing a release.
-- `gearu plan VERSION` is read-only. Do not run `gearu release`, push a release
-  tag, or create a GitHub Release unless the user explicitly requests it.
+- `gearu plan VERSION` and `gearu plan --bump LEVEL` are read-only. Do not run
+  `gearu release`, push a release tag, or create a GitHub Release unless the
+  user explicitly requests it.
 - Never move or reuse a release tag. Correct released content with a new version.
 - Never publish directly to PyPI, crates.io, or npm from a local checkout.
   Registry publication belongs in the repository's release workflow.
@@ -58,7 +59,8 @@ Verify the installation with `gearu --version`.
 ### Preconditions
 
 - Read `gearu.toml` and this repository's release workflow.
-- Choose the release version explicitly; Gearu does not infer it from commits.
+- Choose an explicit release version or an explicit major, minor, or patch bump.
+  Gearu does not infer release intent from commits.
 - Use a clean checkout on the branch configured by `project.branch`.
 - Synchronize configured release and source branches with their remote.
 - Release required cross-repository dependencies first.
@@ -71,6 +73,18 @@ Always inspect the read-only plan first:
 ```sh
 gearu plan VERSION
 ```
+
+Or ask Gearu to select the next version:
+
+```sh
+gearu plan --bump patch
+gearu plan --bump minor
+gearu plan --bump major
+```
+
+Gearu compares configured package versions with valid local and remote release
+tags, then bumps the highest version. It reads remote tags directly and does not
+fetch or create local tags while planning.
 
 For a release candidate, use a numbered version such as `1.2.3-rc.1`.
 
@@ -88,6 +102,15 @@ After reviewing the plan:
 ```sh
 gearu release VERSION
 ```
+
+The release command can select the version itself:
+
+```sh
+gearu release --bump minor
+```
+
+This recalculates the next version at release time. To lock the version reviewed
+in a prior bump plan, pass that plan's reported `VERSION` explicitly.
 
 Gearu builds and tests in a temporary worktree. Only a successful candidate is
 applied to the local release branch and tagged. This step does not change a

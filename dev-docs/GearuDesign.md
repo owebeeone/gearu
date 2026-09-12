@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Gearu turns an explicit release version into a verified repository release. It
-coordinates common Git operations while delegating manifest and lockfile work
-to narrow ecosystem adapters.
+Gearu turns an explicit release version or semantic-version bump selection into
+a verified repository release. It coordinates common Git operations while
+delegating manifest and lockfile work to narrow ecosystem adapters.
 
 It is intentionally not a conventional-commit interpreter, package registry
 client, build system, or deployment framework.
@@ -22,9 +22,14 @@ gearu release VERSION
 project-specific text, and produces no change when its managed sections are
 already current.
 
-`plan` is read-only. It resolves configuration, fetches remote tags, checks
+`plan` is read-only. It resolves configuration, reads remote tags, checks
 preconditions, and reports the exact files, commands, commit, tag, and remote
 operations that `release` would perform.
+
+With `--bump`, Gearu compares configured package versions and local and remote
+release tags. It reads the remote refs directly rather than fetching them into
+the local repository. Source-branch projects derive configured versions from
+the merged candidate.
 
 `release` executes that plan in a temporary detached worktree. A failed
 candidate is removed without changing the user's checkout. The verified commit
@@ -49,7 +54,7 @@ The first adapters are:
 
 ## Release stages
 
-1. Validate the explicit version and configuration.
+1. Validate the explicit version or bump selection and configuration.
 2. Require a clean checkout on the configured release branch.
 3. Fetch and validate upstream branch and tag state.
 4. Verify required dependency releases and immutable tags.

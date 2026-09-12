@@ -30,6 +30,9 @@ class NpmAdapter(Adapter):
             raise GearuError(f"{self.config.manifest} has no top-level version string")
         return value
 
+    def current_versions(self) -> tuple[str, ...]:
+        return (self._version(),)
+
     def plan(self, version: ReleaseVersion) -> tuple[FileChange, ...]:
         current = self._version()
         if current == version.text:

@@ -11,6 +11,10 @@ from ..version import ReleaseVersion
 
 class Adapter(ABC):
     @abstractmethod
+    def current_versions(self) -> tuple[str, ...]:
+        raise NotImplementedError
+
+    @abstractmethod
     def plan(self, version: ReleaseVersion) -> tuple[FileChange, ...]:
         raise NotImplementedError
 

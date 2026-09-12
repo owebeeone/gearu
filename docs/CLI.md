@@ -42,13 +42,18 @@ options:
 ## `gearu plan`
 
 ```text
-usage: gearu plan [-h] [--repo REPO] [--dependency-tag NAME=TAG] version
+usage: gearu plan [-h] [--bump {major,minor,patch}] [--repo REPO]
+                  [--dependency-tag NAME=TAG]
+                  [version]
 
 positional arguments:
   version               explicit release version, e.g. 1.2.3 or v1.2.3
 
 options:
   -h, --help            show this help message and exit
+  --bump {major,minor,patch}
+                        select the next version from configured versions and release
+                        tags
   --repo REPO           repository or a path inside it (default: current directory)
   --dependency-tag NAME=TAG
                         override one configured dependency tag; repeat as needed
@@ -57,15 +62,18 @@ options:
 ## `gearu release`
 
 ```text
-usage: gearu release [-h] [--repo REPO] [--dependency-tag NAME=TAG] [--push]
-                     [--github-release]
-                     version
+usage: gearu release [-h] [--bump {major,minor,patch}] [--repo REPO]
+                     [--dependency-tag NAME=TAG] [--push] [--github-release]
+                     [version]
 
 positional arguments:
   version               explicit release version, e.g. 1.2.3 or v1.2.3
 
 options:
   -h, --help            show this help message and exit
+  --bump {major,minor,patch}
+                        select the next version from configured versions and release
+                        tags
   --repo REPO           repository or a path inside it (default: current directory)
   --dependency-tag NAME=TAG
                         override one configured dependency tag; repeat as needed

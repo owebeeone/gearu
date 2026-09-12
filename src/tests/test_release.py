@@ -292,3 +292,89 @@ def test_cli_plan_is_non_mutating(
     assert "Release: 1.2.3 (v1.2.3)" in capsys.readouterr().out
     assert git(repo, "rev-parse", "HEAD").stdout.strip() == initial
     assert git(repo, "status", "--porcelain").stdout == ""
+
+
+def test_plan_bump_uses_manifest_version_without_creating_tag(tmp_path: Path) -> None:
+    repo, _remote = make_project(tmp_path)
+
+    plan = manager(repo).plan(None, bump="minor")
+
+    assert plan.version == "1.1.0"
+    assert plan.tag == "v1.1.0"
+    assert plan.bump == "minor"
+    assert plan.bump_base == "1.0.0"
+    assert (
+        git(repo, "rev-parse", "--verify", "refs/tags/v1.1.0", check=False).returncode
+        != 0
+    )
+
+
+def test_plan_bump_considers_remote_release_tags(tmp_path: Path) -> None:
+    repo, _remote = make_project(tmp_path)
+    git(repo, "tag", "v1.4.2")
+    git(repo, "push", "origin", "v1.4.2")
+    git(repo, "tag", "-d", "v1.4.2")
+
+    plan = manager(repo).plan(None, bump="patch")
+
+    assert plan.version == "1.4.3"
+    assert plan.bump_base == "1.4.2"
+    assert (
+        git(repo, "rev-parse", "--verify", "refs/tags/v1.4.3", check=False).returncode
+        != 0
+    )
+
+
+def test_release_accepts_bump_instead_of_explicit_version(tmp_path: Path) -> None:
+    repo, _remote = make_project(tmp_path)
+
+    outcome = manager(repo).release(None, ReleaseOptions(), bump="minor")
+
+    assert outcome.version == "1.1.0"
+    assert git(repo, "rev-parse", "v1.1.0^{commit}").returncode == 0
+
+
+def test_cli_plan_accepts_bump_without_version(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo, _remote = make_project(tmp_path)
+
+    result = main(["plan", "--bump", "minor", "--repo", str(repo)])
+
+    assert result == 0
+    output = capsys.readouterr().out
+    assert "Release: 1.1.0 (v1.1.0)" in output
+    assert "Bump:    minor from 1.0.0" in output
+
+
+def test_bump_uses_version_from_merged_source_branch(tmp_path: Path) -> None:
+    repo, _remote = make_project(tmp_path)
+    config_path = repo / "gearu.toml"
+    config_path.write_text(
+        config_path.read_text(encoding="utf-8").replace(
+            'branch = "main"',
+            'branch = "release"\nsource_branch = "main"',
+        ),
+        encoding="utf-8",
+    )
+    git(repo, "add", "gearu.toml")
+    git(repo, "commit", "-m", "configure release branch")
+    git(repo, "push", "origin", "main")
+    git(repo, "branch", "release")
+    git(repo, "push", "-u", "origin", "release")
+    manifest = repo / "pyproject.toml"
+    manifest.write_text(
+        manifest.read_text(encoding="utf-8").replace(
+            'version = "1.0.0"', 'version = "2.0.0"'
+        ),
+        encoding="utf-8",
+    )
+    git(repo, "add", "pyproject.toml")
+    git(repo, "commit", "-m", "advance source version")
+    git(repo, "push", "origin", "main")
+    git(repo, "switch", "release")
+
+    plan = manager(repo).plan(None, bump="minor")
+
+    assert plan.version == "2.1.0"
+    assert plan.bump_base == "2.0.0"

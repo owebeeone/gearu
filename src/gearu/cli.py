@@ -29,8 +29,16 @@ def _add_repo_argument(parser: argparse.ArgumentParser) -> None:
 
 
 def _add_release_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument(
-        "version", help="explicit release version, e.g. 1.2.3 or v1.2.3"
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument(
+        "version",
+        nargs="?",
+        help="explicit release version, e.g. 1.2.3 or v1.2.3",
+    )
+    selection.add_argument(
+        "--bump",
+        choices=("major", "minor", "patch"),
+        help="select the next version from configured versions and release tags",
     )
     _add_repo_argument(parser)
     parser.add_argument(
@@ -78,6 +86,8 @@ def _print_plan(plan: ReleasePlan) -> None:
     print(f"Project: {plan.name}")
     print(f"Release: {plan.version} ({plan.tag})")
     print(f"Branch:  {plan.branch} at {plan.base_sha}")
+    if plan.bump is not None and plan.bump_base is not None:
+        print(f"Bump:    {plan.bump} from {plan.bump_base}")
     if plan.source_branch is not None and plan.source_sha is not None:
         print(f"Merge:   {plan.source_branch} at {plan.source_sha}")
     if plan.already_tagged:
@@ -178,7 +188,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         dependency_tags = _dependency_tags(args.dependency_tag)
         if args.command == "plan":
-            _print_plan(manager.plan(args.version, dependency_tags=dependency_tags))
+            _print_plan(
+                manager.plan(
+                    args.version,
+                    bump=args.bump,
+                    dependency_tags=dependency_tags,
+                )
+            )
             return 0
         outcome = manager.release(
             args.version,
@@ -187,6 +203,7 @@ def main(argv: list[str] | None = None) -> int:
                 github_release=args.github_release,
                 dependency_tags=dependency_tags,
             ),
+            bump=args.bump,
         )
         print(f"gearu: {outcome.tag} -> {outcome.target_sha[:12]}")
         if not args.push:

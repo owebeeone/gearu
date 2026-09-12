@@ -15,6 +15,14 @@ gearu plan 0.1.0
 gearu release 0.1.0
 ```
 
+Or select the next semantic version from configured package versions and valid
+local and remote release tags:
+
+```sh
+gearu plan --bump minor
+gearu release --bump minor
+```
+
 `plan` verifies and reports without changing tracked files or remote state.
 `release` builds and tests a candidate in a temporary worktree, then creates the
 local release commit and immutable tag. External actions are always explicit:

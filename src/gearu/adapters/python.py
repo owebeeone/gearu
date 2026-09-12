@@ -19,6 +19,15 @@ class PythonAdapter(Adapter):
     def _path(self) -> Path:
         return self.root / self.config.manifest
 
+    def current_versions(self) -> tuple[str, ...]:
+        if self.config.version == "scm":
+            self._validate_scm()
+            return ()
+        current = toml_value(self._path(), self.config.version_key)
+        if not isinstance(current, str):
+            raise GearuError(f"{self.config.manifest} version is not a string")
+        return (current,)
+
     def plan(self, version: ReleaseVersion) -> tuple[FileChange, ...]:
         if self.config.version == "scm":
             self._validate_scm()

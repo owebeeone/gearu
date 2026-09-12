@@ -120,6 +120,8 @@ class ReleasePlan:
     already_tagged: bool = False
     source_branch: str | None = None
     source_sha: str | None = None
+    bump: str | None = None
+    bump_base: str | None = None
 
 
 @dataclass(frozen=True)

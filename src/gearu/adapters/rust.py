@@ -31,6 +31,15 @@ class RustAdapter(Adapter):
             return "workspace.package.version"
         raise GearuError(f"could not find a package version in {manifest.path}")
 
+    def current_versions(self) -> tuple[str, ...]:
+        versions: list[str] = []
+        for manifest in self.config.manifests:
+            current = toml_value(self.root / manifest.path, self._key(manifest))
+            if not isinstance(current, str):
+                raise GearuError(f"{manifest.path} version is not a string")
+            versions.append(current)
+        return tuple(versions)
+
     def plan(self, version: ReleaseVersion) -> tuple[FileChange, ...]:
         changes: list[FileChange] = []
         for manifest in self.config.manifests:

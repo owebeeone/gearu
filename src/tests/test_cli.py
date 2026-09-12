@@ -64,3 +64,21 @@ def test_init_bootstraps_git_repository_without_config(
     assert (tmp_path / "AGENTS.md").is_file()
     assert (tmp_path / "RELEASE.md").is_file()
     assert "created AGENTS.md" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["plan"],
+        ["plan", "1.2.3", "--bump", "minor"],
+        ["release"],
+        ["release", "1.2.3", "--bump", "patch"],
+    ],
+)
+def test_release_commands_require_exactly_one_version_selection(
+    arguments: list[str],
+) -> None:
+    with pytest.raises(SystemExit) as outcome:
+        main(arguments)
+
+    assert outcome.value.code == 2

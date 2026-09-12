@@ -27,7 +27,7 @@ from .models import (
     ReleasePlan,
 )
 from .process import Runner
-from .version import ReleaseVersion
+from .version import BumpLevel, ReleaseVersion, select_bumped_version
 
 __all__ = ["ReleaseManager", "ReleaseOptions", "ReleaseOutcome", "ReleasePlan"]
 
@@ -48,6 +48,51 @@ class ReleaseManager:
 
     def _version(self, value: str) -> ReleaseVersion:
         return ReleaseVersion.parse(value, tag_prefix=self.config.project.tag_prefix)
+
+    def _select_version(
+        self,
+        value: str | None,
+        bump: BumpLevel | None,
+    ) -> tuple[ReleaseVersion, str | None]:
+        if (value is None) == (bump is None):
+            raise GearuError("provide exactly one of VERSION or --bump")
+        if value is not None:
+            return self._version(value), None
+
+        assert bump is not None
+        if self.config.project.source_branch is not None:
+            source_sha = self.git.branch_commit(self.config.project.source_branch)
+            with self._candidate(
+                self.git.head(),
+                "bump-selection",
+                source_sha,
+            ) as candidate:
+                candidate_config = load_config(candidate)
+                configured_versions = tuple(
+                    current
+                    for adapter in build_adapters(candidate, candidate_config)
+                    for current in adapter.current_versions()
+                )
+        else:
+            configured_versions = tuple(
+                current
+                for adapter in build_adapters(self.root, self.config)
+                for current in adapter.current_versions()
+            )
+        tags = tuple(
+            sorted(
+                set(self.git.local_tags()).union(
+                    self.git.remote_tags(self.config.project.remote)
+                )
+            )
+        )
+        selection = select_bumped_version(
+            bump=bump,
+            tag_prefix=self.config.project.tag_prefix,
+            tags=tags,
+            configured_versions=configured_versions,
+        )
+        return selection.version, selection.base_version
 
     def _values(self, version: ReleaseVersion) -> dict[str, str]:
         return {
@@ -220,11 +265,12 @@ class ReleaseManager:
 
     def plan(
         self,
-        value: str,
+        value: str | None = None,
         *,
+        bump: BumpLevel | None = None,
         dependency_tags: dict[str, str] | None = None,
     ) -> ReleasePlan:
-        version = self._version(value)
+        version, bump_base = self._select_version(value, bump)
         base_sha, already_tagged, source_sha = self._check_repository_state(version)
         if source_sha is not None:
             with self._candidate(base_sha, version.tag, source_sha) as candidate:
@@ -272,6 +318,8 @@ class ReleaseManager:
             if source_sha is not None
             else None,
             source_sha=source_sha,
+            bump=bump,
+            bump_base=bump_base,
         )
 
     @contextmanager
@@ -383,14 +431,20 @@ class ReleaseManager:
 
     def release(
         self,
-        value: str,
+        value: str | None = None,
         options: ReleaseOptions | None = None,
+        *,
+        bump: BumpLevel | None = None,
     ) -> ReleaseOutcome:
         options = options or ReleaseOptions()
         if options.github_release and not options.push:
             raise GearuError("--github-release requires --push")
-        version = self._version(value)
-        plan = self.plan(value, dependency_tags=options.dependency_tags)
+        plan = self.plan(
+            value,
+            bump=bump,
+            dependency_tags=options.dependency_tags,
+        )
+        version = self._version(plan.version)
         target = plan.base_sha
         created_commit = False
 

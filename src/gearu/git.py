@@ -82,6 +82,19 @@ class GitRepository:
         }
         return refs.get(f"{ref}^{{}}", refs.get(ref))
 
+    def local_tags(self) -> tuple[str, ...]:
+        return tuple(self.output(["tag", "--list"]).splitlines())
+
+    def remote_tags(self, remote: str) -> tuple[str, ...]:
+        result = self._run(["ls-remote", "--tags", remote])
+        tags = {
+            reference.removeprefix("refs/tags/").removesuffix("^{}")
+            for _sha, reference in (
+                row.split() for row in result.stdout.splitlines() if row.strip()
+            )
+        }
+        return tuple(sorted(tags))
+
     def is_ancestor(self, ancestor: str, descendant: str) -> bool:
         result = self._run(
             ["merge-base", "--is-ancestor", ancestor, descendant],

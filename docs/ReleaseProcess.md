@@ -15,11 +15,29 @@ workflow publishes artifacts or packages after a GitHub Release is published.
 
 ## Prepare and Inspect
 
-Choose the version explicitly. Gearu does not infer it from commits.
+Choose the version explicitly. Gearu does not infer release intent from
+commits.
 
 ```sh
 gearu plan 1.2.3
 ```
+
+Alternatively, select the next semantic version:
+
+```sh
+gearu plan --bump patch
+gearu plan --bump minor
+gearu plan --bump major
+```
+
+Gearu compares all configured static package versions with valid local and
+remote release tags, then bumps the highest version. Tag-derived projects with
+no release tags start at `0.0.0`. Remote tags are read directly; planning does
+not fetch or create local tags.
+
+`release --bump LEVEL` recalculates this selection at release time. To lock the
+version reviewed in the plan, pass the reported version explicitly to
+`release`.
 
 The plan verifies branch and remote state, tag immutability, dependency tags,
 manifest values, and command configuration. It does not run release checks or
@@ -29,6 +47,12 @@ change tracked files, commits, tags, releases, or registry state.
 
 ```sh
 gearu release 1.2.3
+```
+
+The equivalent automatic selection is:
+
+```sh
+gearu release --bump minor
 ```
 
 Gearu creates a detached temporary worktree, optionally merges the source
