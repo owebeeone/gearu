@@ -23,4 +23,3 @@ def _resolve() -> str:
 
 
 __version__ = _resolve()
-

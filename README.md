@@ -5,17 +5,22 @@
 Gearu is a small, explicit release-preparation tool for Python, Rust, and npm
 projects. Its name comes from Old English *gearu*: ready, prepared, or equipped.
 
-Gearu will take an intended version and make the repository mechanically ready
-to release:
+Gearu takes an intended version and makes the repository mechanically ready to
+release:
 
 ```sh
 gearu plan 0.1.0
 gearu release 0.1.0
 ```
 
-The release engine is not implemented yet. This initial repository establishes
-the package, command-line entry point, test layout, and trusted publication
-path.
+`plan` verifies and reports without changing tracked files or remote state.
+`release` builds and tests a candidate in a temporary worktree, then creates the
+local release commit and immutable tag. External actions are always explicit:
+
+```sh
+gearu release 0.1.0 --push
+gearu release 0.1.0 --push --github-release
+```
 
 ## Boundaries
 
@@ -46,19 +51,58 @@ uv tool install gearu
 For development:
 
 ```sh
-python -m pip install --editable .
-python -m pip install pytest
-python run_tests.py
+uv sync
+uv run python run_tests.py
 ```
 
-## Current CLI
+## Configure
 
-The bootstrap CLI exposes package metadata while the release engine is built:
+Add `gearu.toml` to the target repository:
 
-```sh
-gearu --help
-gearu --version
+```toml
+[project]
+name = "example"
+branch = "main"
+remote = "origin"
+tag_prefix = "v"
+github_repo = "owner/example"
+# Optional for repositories that cut releases from a maintained release branch:
+# source_branch = "main"
+
+[python]
+manifest = "pyproject.toml"
+version = "static"
+
+[release]
+checks = [["python", "-m", "pytest", "-q"]]
 ```
+
+Use `[python]` with `version = "scm"` for tag-derived versions. Rust projects
+use `[rust]` with `manifests = ["Cargo.toml"]`; npm projects use `[npm]` with
+`manifest = "package.json"`. Lockfile refresh commands are configurable and run
+only when their ecosystem manifest changes.
+
+Cross-repository release dependencies can verify a remote tag and update an
+inline TOML pin:
+
+```toml
+[[dependencies]]
+name = "example-core"
+url = "https://github.com/owner/example-core"
+tag = "{tag}"
+pin_file = "Cargo.toml"
+pin_key = "dependencies.example-core"
+pin_field = "tag"
+# Optional: prove Cargo.lock pins this package to the resolved tag commit.
+lock_package = "example-core"
+```
+
+Override a same-version dependency deliberately with
+`--dependency-tag example-core=v1.1.0`.
+
+See [Configuration](docs/Configuration.md) for the complete schema and
+[Release Process](docs/ReleaseProcess.md) for the end-to-end operator flow and
+recovery rules.
 
 ## Release model
 
@@ -70,4 +114,3 @@ token is stored in the repository.
 ## License
 
 [MIT](LICENSE)
-

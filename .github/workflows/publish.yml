@@ -62,11 +62,14 @@ jobs:
           from setuptools_scm import get_version
 
           tag = os.environ["RELEASE_TAG"]
-          if re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+", tag) is None:
-              raise SystemExit(f"release tag must be vMAJOR.MINOR.PATCH, got {tag!r}")
+          if re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+(?:-rc\.[1-9][0-9]*)?", tag) is None:
+              raise SystemExit(
+                  "release tag must be vMAJOR.MINOR.PATCH or "
+                  f"vMAJOR.MINOR.PATCH-rc.N, got {tag!r}"
+              )
 
           version = get_version()
-          expected = tag.removeprefix("v")
+          expected = re.sub(r"-rc\.([1-9][0-9]*)$", r"rc\1", tag.removeprefix("v"))
           if version != expected:
               raise SystemExit(
                   f"release tag {tag!r} resolves to version {version!r}, expected {expected!r}"
@@ -117,4 +120,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist/
-

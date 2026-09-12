@@ -20,14 +20,20 @@ gearu release VERSION
 preconditions, and reports the exact files, commands, commit, tag, and remote
 operations that `release` would perform.
 
-`release` executes that plan in stages. A failed stage must stop before the next
-externally visible stage begins.
+`release` executes that plan in a temporary detached worktree. A failed
+candidate is removed without changing the user's checkout. The verified commit
+is fast-forwarded into the configured local branch only after candidate and
+exact-commit checks pass.
 
 ## Configuration
 
 Each target repository contains `gearu.toml`. Shared orchestration reads common
 repository and release settings. Ecosystem adapters own their specific manifest
 paths, dependency pins, lockfile refresh commands, and validation gates.
+
+When `project.source_branch` is configured, the source branch is merged into the
+configured release branch inside the temporary candidate. The user must have the
+release branch checked out, but a conflict cannot leave that checkout mid-merge.
 
 The first adapters are:
 
@@ -42,11 +48,11 @@ The first adapters are:
 3. Fetch and validate upstream branch and tag state.
 4. Verify required dependency releases and immutable tags.
 5. Update manifests, dependency pins, and lockfiles.
-6. Run configured checks against the resulting tree.
+6. Run configured checks against the resulting tree in a temporary worktree.
 7. Create the release commit.
 8. Re-run identity-sensitive checks against the exact commit.
 9. Create the immutable tag.
-10. Atomically push that repository's branch commit and tag.
+10. Atomically push the exact commit to that repository's branch and tag.
 11. Create the GitHub Release.
 
 Registry publication is never a Gearu stage. The GitHub Release triggers the
@@ -58,4 +64,3 @@ A release train may require matching versions across repositories, such as
 `gwz-core`, `gwz-cli`, and `gwz-py`. Gearu must verify and sequence those
 releases. It must not imply transactionality across remotes or attempt to move a
 tag after a later repository fails.
-

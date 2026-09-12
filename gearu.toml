@@ -1,0 +1,22 @@
+[project]
+name = "gearu"
+branch = "main"
+remote = "origin"
+tag_prefix = "v"
+github_repo = "owebeeone/gearu"
+
+[python]
+manifest = "pyproject.toml"
+version = "scm"
+lockfiles = ["uv.lock"]
+lock_command = ["uv", "lock"]
+
+[release]
+checks = [
+    ["uv", "run", "ruff", "check", "src", "run_tests.py"],
+    ["uv", "run", "ruff", "format", "--check", "src", "run_tests.py"],
+    ["uv", "run", "python", "run_tests.py"],
+    ["uv", "build"],
+]
+commit_message = "chore(release): gearu {version}"
+github_notes = "Gearu {tag}. Publishing this release triggers the PyPI workflow."
