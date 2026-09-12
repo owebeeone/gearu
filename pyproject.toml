@@ -1,0 +1,45 @@
+[project]
+name = "gearu"
+dynamic = ["version"]
+description = "Make repositories ready for release."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Gianni Mariani", email = "gianni@mariani.ws" }]
+keywords = ["release", "versioning", "automation", "git", "packaging"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Version Control :: Git",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/owebeeone/gearu"
+Repository = "https://github.com/owebeeone/gearu"
+
+[project.scripts]
+gearu = "gearu.cli:main"
+
+[build-system]
+requires = ["setuptools>=77", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+fallback_version = "0.0.0"
+
+[tool.setuptools_scm.tag]
+prefix = "v"
+strict = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["gearu*"]
+
+[tool.pytest.ini_options]
+testpaths = ["src/tests"]
