@@ -13,6 +13,15 @@ gearu release 0.1.0 --push --github-release
 `release` works in a temporary candidate worktree, so failed checks do not
 leave the normal checkout partly prepared.
 
+Install reusable release guidance in a repository with:
+
+```sh
+gearu init
+```
+
+This idempotently manages a concise Gearu section in `AGENTS.md` and a complete
+operator guide in `RELEASE.md`, while preserving project-specific content.
+
 ## Start Here
 
 - [Configuration](Configuration.md) describes every `gearu.toml` setting.

@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
+from .bootstrap import initialize_release_docs
 from .config import load_config
 from .errors import GearuError
 from .models import ReleasePlan
@@ -18,16 +19,20 @@ class _HelpFormatter(argparse.HelpFormatter):
         super().__init__(prog, max_help_position=24, width=88)
 
 
-def _add_release_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument(
-        "version", help="explicit release version, e.g. 1.2.3 or v1.2.3"
-    )
+def _add_repo_argument(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--repo",
         type=Path,
         default=Path.cwd(),
         help="repository or a path inside it (default: current directory)",
     )
+
+
+def _add_release_arguments(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "version", help="explicit release version, e.g. 1.2.3 or v1.2.3"
+    )
+    _add_repo_argument(parser)
     parser.add_argument(
         "--dependency-tag",
         action="append",
@@ -51,17 +56,22 @@ def _dependency_tags(values: list[str]) -> dict[str, str]:
     return parsed
 
 
-def _repository_root(start: Path) -> Path:
+def _git_repository_root(start: Path) -> Path:
     resolved = start.resolve()
     candidates = (
         (resolved, *resolved.parents) if resolved.is_dir() else resolved.parents
     )
     for candidate in candidates:
-        if (candidate / ".git").exists() and (candidate / "gearu.toml").is_file():
+        if (candidate / ".git").exists():
             return candidate
-    raise GearuError(
-        f"could not find a Git repository containing gearu.toml from {start}"
-    )
+    raise GearuError(f"could not find a Git repository from {start}")
+
+
+def _repository_root(start: Path) -> Path:
+    root = _git_repository_root(start)
+    if not (root / "gearu.toml").is_file():
+        raise GearuError(f"no gearu.toml found at {root / 'gearu.toml'}")
+    return root
 
 
 def _print_plan(plan: ReleasePlan) -> None:
@@ -107,6 +117,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     commands = parser.add_subparsers(dest="command")
 
+    init = commands.add_parser(
+        "init",
+        help="install or update repository release guidance",
+        formatter_class=_HelpFormatter,
+    )
+    _add_repo_argument(init)
+
     plan = commands.add_parser(
         "plan",
         help="validate and display a release plan",
@@ -140,6 +157,21 @@ def main(argv: list[str] | None = None) -> int:
         parser.print_help()
         return 0
     try:
+        if args.command == "init":
+            root = _git_repository_root(args.repo)
+            existing = {
+                path
+                for path in (Path("AGENTS.md"), Path("RELEASE.md"))
+                if (root / path).is_file()
+            }
+            changed = set(initialize_release_docs(root))
+            for path in (Path("AGENTS.md"), Path("RELEASE.md")):
+                if path not in changed:
+                    state = "already current"
+                else:
+                    state = "updated" if path in existing else "created"
+                print(f"gearu: {state} {path}")
+            return 0
         root = _repository_root(args.repo)
         manager = ReleaseManager(
             root, load_config(root), log=lambda message: print(f"gearu: {message}")

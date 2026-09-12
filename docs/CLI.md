@@ -12,20 +12,31 @@ python scripts/generate_cli_reference.py --check
 ## `gearu`
 
 ```text
-usage: gearu [-h] [--version] {plan,release} ...
+usage: gearu [-h] [--version] {init,plan,release} ...
 
 Make repositories ready for release.
 
 positional arguments:
-  {plan,release}
-    plan          validate and display a release plan
-    release       prepare, verify, commit, and tag a release
+  {init,plan,release}
+    init               install or update repository release guidance
+    plan               validate and display a release plan
+    release            prepare, verify, commit, and tag a release
 
 options:
-  -h, --help      show this help message and exit
-  --version       show program's version number and exit
+  -h, --help           show this help message and exit
+  --version            show program's version number and exit
 
 Project: https://github.com/owebeeone/gearu
+```
+
+## `gearu init`
+
+```text
+usage: gearu init [-h] [--repo REPO]
+
+options:
+  -h, --help   show this help message and exit
+  --repo REPO  repository or a path inside it (default: current directory)
 ```
 
 ## `gearu plan`

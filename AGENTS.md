@@ -4,16 +4,20 @@ These rules apply to work in this repository.
 
 - Work TDD-first for behavior changes: failing test, implementation, green
   tests, then refactor.
-- Gearu receives an explicit release version. It does not infer release intent
-  from commit messages.
-- Gearu prepares and verifies releases; registry publication belongs to the
-  target repository's GitHub Actions workflow.
-- Never publish to PyPI, crates.io, or npm from a local checkout. Local package
-  checks must use build, validation, or dry-run commands only.
-- Treat commit, tag, push, and GitHub Release creation as separate stages with
-  explicit preconditions. Never move or replace an existing release tag.
 - Preserve target manifest formatting and comments when updating versions or
   dependency pins.
 - Keep ecosystem-specific behavior behind narrow adapters. Shared release
   orchestration must not contain Cargo-, Python-, or npm-specific branching.
 
+<!-- gearu:agents:start -->
+## Releases
+
+- This repository uses [Gearu](https://owebeeone.github.io/gearu/) for release
+  preparation.
+- Read `RELEASE.md` before planning or performing a release.
+- `gearu plan VERSION` is read-only. Do not run `gearu release`, push a release
+  tag, or create a GitHub Release unless the user explicitly requests it.
+- Never move or reuse a release tag. Correct released content with a new version.
+- Never publish directly to PyPI, crates.io, or npm from a local checkout.
+  Registry publication belongs in the repository's release workflow.
+<!-- gearu:agents:end -->

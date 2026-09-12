@@ -12,9 +12,15 @@ client, build system, or deployment framework.
 ## Initial interface
 
 ```text
+gearu init
 gearu plan VERSION
 gearu release VERSION
 ```
+
+`init` installs marker-delimited release guidance in `AGENTS.md` and
+`RELEASE.md`. It requires a Git repository but not `gearu.toml`, preserves
+project-specific text, and produces no change when its managed sections are
+already current.
 
 `plan` is read-only. It resolves configuration, fetches remote tags, checks
 preconditions, and reports the exact files, commands, commit, tag, and remote

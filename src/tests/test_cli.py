@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import subprocess
 
 import pytest
 
@@ -37,6 +38,7 @@ def test_help_lists_release_commands(capsys: pytest.CaptureFixture[str]) -> None
     output = capsys.readouterr().out
     assert "plan" in output
     assert "release" in output
+    assert "init" in output
 
 
 def test_dependency_tag_overrides_are_explicit() -> None:
@@ -46,3 +48,19 @@ def test_dependency_tag_overrides_are_explicit() -> None:
     }
     with pytest.raises(GearuError):
         _dependency_tags(["v1.2.3"])
+
+
+def test_init_bootstraps_git_repository_without_config(
+    tmp_path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    subprocess.run(
+        ["git", "init", "-b", "main", str(tmp_path)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert main(["init", "--repo", str(tmp_path)]) == 0
+    assert (tmp_path / "AGENTS.md").is_file()
+    assert (tmp_path / "RELEASE.md").is_file()
+    assert "created AGENTS.md" in capsys.readouterr().out

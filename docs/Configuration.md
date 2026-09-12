@@ -4,6 +4,22 @@ Each repository managed by Gearu has a `gearu.toml` at its root. Paths are
 relative to that root. Commands are arrays of arguments and are run directly,
 without a shell.
 
+## Repository Guidance
+
+Bootstrap the repository's reusable agent and operator instructions first:
+
+```sh
+gearu init
+```
+
+This command needs only a Git repository; `gearu.toml` does not need to exist
+yet. It adds marker-delimited Gearu guidance to `AGENTS.md` and `RELEASE.md`.
+Existing content outside those sections is preserved, and rerunning the command
+updates the managed text without duplicating it.
+
+If either document already discusses Gearu without managed markers, `init`
+stops so the existing instructions can be reconciled deliberately.
+
 ## Project
 
 ```toml

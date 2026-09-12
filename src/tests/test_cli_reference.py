@@ -30,5 +30,6 @@ def test_generator_stdout_contains_every_command_help() -> None:
     assert result.returncode == 0, result.stderr
     assert "# CLI Reference" in result.stdout
     assert "## `gearu`" in result.stdout
+    assert "## `gearu init`" in result.stdout
     assert "## `gearu plan`" in result.stdout
     assert "## `gearu release`" in result.stdout

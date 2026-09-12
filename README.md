@@ -57,6 +57,22 @@ uv sync
 uv run python run_tests.py
 ```
 
+## Bootstrap release guidance
+
+From any Git repository, run:
+
+```sh
+gearu init
+```
+
+This creates or updates managed Gearu sections in `AGENTS.md` and `RELEASE.md`.
+The short agent rule points to the full repository release instructions, which
+cover installation, documentation, planning, local preparation, pushing,
+GitHub Release creation, and recovery. Existing repository-specific content is
+preserved, and repeated runs produce no changes.
+
+`init` does not require `gearu.toml`; it can be the first Gearu setup step.
+
 ## Configure
 
 Add `gearu.toml` to the target repository:
