@@ -41,6 +41,17 @@ def test_help_lists_release_commands(capsys: pytest.CaptureFixture[str]) -> None
     assert "init" in output
 
 
+@pytest.mark.parametrize("command", ["plan", "release"])
+def test_release_help_shows_required_version_selection(
+    command: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit) as outcome:
+        main([command, "--help"])
+
+    assert outcome.value.code == 0
+    assert "(--bump {major,minor,patch} | version)" in capsys.readouterr().out
+
+
 def test_dependency_tag_overrides_are_explicit() -> None:
     assert _dependency_tags(["core=v1.2.3", "cli=v1.1.0"]) == {
         "core": "v1.2.3",

@@ -13,6 +13,16 @@ from .errors import GearuError
 from .models import ReleasePlan
 from .release import ReleaseManager, ReleaseOptions
 
+_PLAN_USAGE = (
+    "%(prog)s [-h] [--repo REPO] [--dependency-tag NAME=TAG]\n"
+    "                  (--bump {major,minor,patch} | version)"
+)
+_RELEASE_USAGE = (
+    "%(prog)s [-h] [--repo REPO] [--dependency-tag NAME=TAG] [--push]\n"
+    "                     [--github-release]\n"
+    "                     (--bump {major,minor,patch} | version)"
+)
+
 
 class _HelpFormatter(argparse.HelpFormatter):
     def __init__(self, prog: str) -> None:
@@ -137,6 +147,7 @@ def build_parser() -> argparse.ArgumentParser:
     plan = commands.add_parser(
         "plan",
         help="validate and display a release plan",
+        usage=_PLAN_USAGE,
         formatter_class=_HelpFormatter,
     )
     _add_release_arguments(plan)
@@ -144,6 +155,7 @@ def build_parser() -> argparse.ArgumentParser:
     release = commands.add_parser(
         "release",
         help="prepare, verify, commit, and tag a release",
+        usage=_RELEASE_USAGE,
         formatter_class=_HelpFormatter,
     )
     _add_release_arguments(release)

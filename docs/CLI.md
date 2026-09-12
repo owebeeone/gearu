@@ -42,9 +42,8 @@ options:
 ## `gearu plan`
 
 ```text
-usage: gearu plan [-h] [--bump {major,minor,patch}] [--repo REPO]
-                  [--dependency-tag NAME=TAG]
-                  [version]
+usage: gearu plan [-h] [--repo REPO] [--dependency-tag NAME=TAG]
+                  (--bump {major,minor,patch} | version)
 
 positional arguments:
   version               explicit release version, e.g. 1.2.3 or v1.2.3
@@ -62,9 +61,9 @@ options:
 ## `gearu release`
 
 ```text
-usage: gearu release [-h] [--bump {major,minor,patch}] [--repo REPO]
-                     [--dependency-tag NAME=TAG] [--push] [--github-release]
-                     [version]
+usage: gearu release [-h] [--repo REPO] [--dependency-tag NAME=TAG] [--push]
+                     [--github-release]
+                     (--bump {major,minor,patch} | version)
 
 positional arguments:
   version               explicit release version, e.g. 1.2.3 or v1.2.3
