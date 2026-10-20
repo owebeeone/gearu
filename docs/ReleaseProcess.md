@@ -5,7 +5,8 @@ workflow publishes artifacts or packages after a GitHub Release is published.
 
 ## Preconditions
 
-- `gearu.toml` is committed and valid.
+- `gearu.toml` (or the release line's file passed with `--config`) is committed
+  and valid.
 - The configured release branch is checked out and the working tree is clean.
 - The configured remote has the release branch and any source branch.
 - Project release checks work without interactive input.

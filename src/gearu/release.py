@@ -10,7 +10,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from .adapters import build_adapters
-from .config import load_config
+from .config import DEFAULT_CONFIG_PATH, load_config
 from .dependency_checks import validate_dependency_locks
 from .errors import GearuError
 from .git import GitRepository
@@ -38,10 +38,13 @@ class ReleaseManager:
         root: Path,
         config: GearuConfig | None = None,
         *,
+        config_path: Path = DEFAULT_CONFIG_PATH,
         log: Callable[[str], None] = print,
     ) -> None:
         self.root = root.resolve()
-        self.config = config or load_config(self.root)
+        # Repository-relative, so the same file is read again inside candidate worktrees.
+        self.config_path = config_path
+        self.config = config or load_config(self.root, config_path)
         self.log = log
         self.runner = Runner(log)
         self.git = GitRepository(self.root, self.runner)
@@ -67,7 +70,7 @@ class ReleaseManager:
                 "bump-selection",
                 source_sha,
             ) as candidate:
-                candidate_config = load_config(candidate)
+                candidate_config = load_config(candidate, self.config_path)
                 configured_versions = tuple(
                     current
                     for adapter in build_adapters(candidate, candidate_config)
@@ -274,7 +277,7 @@ class ReleaseManager:
         base_sha, already_tagged, source_sha = self._check_repository_state(version)
         if source_sha is not None:
             with self._candidate(base_sha, version.tag, source_sha) as candidate:
-                candidate_config = load_config(candidate)
+                candidate_config = load_config(candidate, self.config_path)
                 dependencies = self._resolve_dependencies(
                     version, dependency_tags or {}, candidate_config
                 )
@@ -326,7 +329,9 @@ class ReleaseManager:
     def _candidate(
         self, sha: str, tag: str, source_sha: str | None = None
     ) -> Iterator[Path]:
-        temp_root = Path(tempfile.mkdtemp(prefix=f"gearu-{tag}-"))
+        # Tag prefixes may contain "/" (e.g. "rust/v"); keep the directory name flat.
+        safe_tag = re.sub(r"[^A-Za-z0-9._-]+", "-", tag)
+        temp_root = Path(tempfile.mkdtemp(prefix=f"gearu-{safe_tag}-"))
         worktree = temp_root / "candidate"
         self.git.add_worktree(worktree, sha)
         try:
@@ -367,7 +372,7 @@ class ReleaseManager:
         resolutions: tuple[DependencyResolution, ...],
         preapproved_changes: set[Path] | None = None,
     ) -> tuple[str, bool]:
-        config = load_config(root)
+        config = load_config(root, self.config_path)
         adapters = build_adapters(root, config)
         touched: set[Path] = set()
         for adapter in adapters:
@@ -417,7 +422,7 @@ class ReleaseManager:
         version: ReleaseVersion,
         resolutions: tuple[DependencyResolution, ...],
     ) -> None:
-        config = load_config(root)
+        config = load_config(root, self.config_path)
         adapters = build_adapters(root, config)
         for adapter in adapters:
             adapter.validate(version)

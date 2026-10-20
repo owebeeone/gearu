@@ -271,14 +271,34 @@ def _load_dependencies(data: object) -> tuple[DependencyConfig, ...]:
     return tuple(dependencies)
 
 
-def load_config(root: Path) -> GearuConfig:
-    path = root / "gearu.toml"
+DEFAULT_CONFIG_PATH = Path("gearu.toml")
+
+
+def config_path_in_repository(value: Path) -> Path:
+    """Validate a repository-relative release configuration path."""
+    if value.is_absolute() or value.anchor or ".." in value.parts or not value.parts:
+        raise GearuError(
+            f"release configuration {value.as_posix()} must be a relative path "
+            "inside the repository"
+        )
+    return value
+
+
+def load_config(root: Path, config_path: Path = DEFAULT_CONFIG_PATH) -> GearuConfig:
+    """Load one release line's configuration.
+
+    ``config_path`` is relative to ``root``; paths inside the file are always
+    relative to the repository root, wherever the file itself lives.
+    """
+    config_path = config_path_in_repository(config_path)
+    label = config_path.as_posix()
+    path = root / config_path
     try:
         data = tomllib.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as error:
-        raise GearuError(f"no gearu.toml found at {path}") from error
+        raise GearuError(f"no {label} found at {path}") from error
     except tomllib.TOMLDecodeError as error:
-        raise GearuError(f"invalid gearu.toml: {error}") from error
+        raise GearuError(f"invalid {label}: {error}") from error
 
     project_data = data.get("project")
     if not isinstance(project_data, dict) or not isinstance(
@@ -351,7 +371,7 @@ def load_config(root: Path) -> GearuConfig:
     )
     if config.python is None and config.rust is None and config.npm is None:
         raise GearuError(
-            "gearu.toml must configure at least one of [python], [rust], or [npm]"
+            f"{label} must configure at least one of [python], [rust], or [npm]"
         )
     lock_dependencies = [
         dependency.name
