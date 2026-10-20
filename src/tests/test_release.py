@@ -157,7 +157,7 @@ def test_release_verifies_and_updates_remote_dependency_tag(tmp_path: Path) -> N
     repo, _remote = make_project(tmp_path / "consumer")
     with (repo / "pyproject.toml").open("a", encoding="utf-8") as manifest:
         manifest.write(
-            f'\n[dependencies]\ncore = {{ git = "{dependency_remote}", tag = "v1.0.0" }}\n'
+            f'\n[dependencies]\ncore = {{ git = "{dependency_remote.as_posix()}", tag = "v1.0.0" }}\n'
         )
     with (repo / "gearu.toml").open("a", encoding="utf-8") as config:
         config.write(
@@ -165,7 +165,7 @@ def test_release_verifies_and_updates_remote_dependency_tag(tmp_path: Path) -> N
 
 [[dependencies]]
 name = "core"
-url = "{dependency_remote}"
+url = "{dependency_remote.as_posix()}"
 tag = "{{tag}}"
 pin_file = "pyproject.toml"
 pin_key = "dependencies.core"
@@ -191,7 +191,7 @@ def test_missing_dependency_tag_stops_before_candidate_changes(tmp_path: Path) -
     repo, _remote = make_project(tmp_path / "consumer")
     with (repo / "gearu.toml").open("a", encoding="utf-8") as config:
         config.write(
-            f'\n[[dependencies]]\nname = "core"\nurl = "{dependency_remote}"\n'
+            f'\n[[dependencies]]\nname = "core"\nurl = "{dependency_remote.as_posix()}"\n'
         )
     git(repo, "add", "gearu.toml")
     git(repo, "commit", "-m", "configure dependency")
@@ -265,7 +265,7 @@ def test_dependency_pin_url_must_match_verified_remote(tmp_path: Path) -> None:
 
 [[dependencies]]
 name = "core"
-url = "{dependency_remote}"
+url = "{dependency_remote.as_posix()}"
 tag = "{{tag}}"
 pin_file = "pyproject.toml"
 pin_key = "dependencies.core"
