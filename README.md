@@ -108,6 +108,12 @@ use `[rust]` with `manifests = ["Cargo.toml"]`; npm projects use `[npm]` with
 `manifest = "package.json"`. Lockfile refresh commands are configurable and run
 only when their ecosystem manifest changes.
 
+A repository that releases several packages on independent schedules (say a
+Python library tagged `vX.Y.Z` and a Rust CLI tagged `rust/vX.Y.Z`) gives each
+release line its own configuration file and selects it with
+`gearu plan --config rust/gearu.toml ...`; see
+[Independent Release Lines](docs/Configuration.md#independent-release-lines).
+
 Cross-repository release dependencies can verify a remote tag and update an
 inline TOML pin:
 

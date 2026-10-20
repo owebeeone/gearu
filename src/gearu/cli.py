@@ -8,18 +8,18 @@ from pathlib import Path
 
 from . import __version__
 from .bootstrap import initialize_release_docs
-from .config import load_config
+from .config import DEFAULT_CONFIG_PATH, config_path_in_repository, load_config
 from .errors import GearuError
 from .models import ReleasePlan
 from .release import ReleaseManager, ReleaseOptions
 
 _PLAN_USAGE = (
-    "%(prog)s [-h] [--repo REPO] [--dependency-tag NAME=TAG]\n"
+    "%(prog)s [-h] [--repo REPO] [--config PATH] [--dependency-tag NAME=TAG]\n"
     "                  (--bump {major,minor,patch} | version)"
 )
 _RELEASE_USAGE = (
-    "%(prog)s [-h] [--repo REPO] [--dependency-tag NAME=TAG] [--push]\n"
-    "                     [--github-release]\n"
+    "%(prog)s [-h] [--repo REPO] [--config PATH] [--dependency-tag NAME=TAG]\n"
+    "                     [--push] [--github-release]\n"
     "                     (--bump {major,minor,patch} | version)"
 )
 
@@ -51,6 +51,17 @@ def _add_release_arguments(parser: argparse.ArgumentParser) -> None:
         help="select the next version from configured versions and release tags",
     )
     _add_repo_argument(parser)
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help=(
+            "release configuration inside the repository, for repositories with "
+            "several independently released packages (default: gearu.toml at the "
+            "repository root)"
+        ),
+    )
     parser.add_argument(
         "--dependency-tag",
         action="append",
@@ -85,11 +96,21 @@ def _git_repository_root(start: Path) -> Path:
     raise GearuError(f"could not find a Git repository from {start}")
 
 
-def _repository_root(start: Path) -> Path:
-    root = _git_repository_root(start)
-    if not (root / "gearu.toml").is_file():
-        raise GearuError(f"no gearu.toml found at {root / 'gearu.toml'}")
-    return root
+def _config_path(root: Path, value: Path | None) -> Path:
+    """Return the selected release configuration, relative to the repository root."""
+    if value is None:
+        relative = DEFAULT_CONFIG_PATH
+    else:
+        resolved = (value if value.is_absolute() else Path.cwd() / value).resolve()
+        try:
+            relative = config_path_in_repository(resolved.relative_to(root))
+        except ValueError as error:
+            raise GearuError(
+                f"--config {value} must be inside the repository {root}"
+            ) from error
+    if not (root / relative).is_file():
+        raise GearuError(f"no {relative.as_posix()} found at {root / relative}")
+    return relative
 
 
 def _print_plan(plan: ReleasePlan) -> None:
@@ -106,7 +127,7 @@ def _print_plan(plan: ReleasePlan) -> None:
     if plan.changes:
         for change in plan.changes:
             print(
-                f"  {change.path}: {change.current} -> {change.target} "
+                f"  {change.path.as_posix()}: {change.current} -> {change.target} "
                 f"({change.reason})"
             )
     else:
@@ -194,9 +215,13 @@ def main(argv: list[str] | None = None) -> int:
                     state = "updated" if path in existing else "created"
                 print(f"gearu: {state} {path}")
             return 0
-        root = _repository_root(args.repo)
+        root = _git_repository_root(args.repo)
+        config_path = _config_path(root, args.config)
         manager = ReleaseManager(
-            root, load_config(root), log=lambda message: print(f"gearu: {message}")
+            root,
+            load_config(root, config_path),
+            config_path=config_path,
+            log=lambda message: print(f"gearu: {message}"),
         )
         dependency_tags = _dependency_tags(args.dependency_tag)
         if args.command == "plan":

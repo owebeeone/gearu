@@ -58,7 +58,10 @@ Verify the installation with `gearu --version`.
 
 ### Preconditions
 
-- Read `gearu.toml` and this repository's release workflow.
+- Read `gearu.toml` and this repository's release workflow. If the repository
+  releases several packages independently, each release line has its own
+  configuration file; pass it to every `plan` and `release` command with
+  `--config PATH`.
 - Choose an explicit release version or an explicit major, minor, or patch bump.
   Gearu does not infer release intent from commits.
 - Use a clean checkout on the branch configured by `project.branch`.

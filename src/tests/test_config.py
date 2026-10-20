@@ -161,3 +161,44 @@ checks = [["cargo", "test"]]
 
     with pytest.raises(GearuError, match="requires rust.lockfile"):
         load_config(tmp_path)
+
+
+def test_load_config_reads_an_alternate_config_path(tmp_path: Path) -> None:
+    (tmp_path / "rust").mkdir()
+    (tmp_path / "rust" / "gearu.toml").write_text(
+        """
+[project]
+name = "demo-cli"
+tag_prefix = "rust/v"
+
+[rust]
+manifests = ["rust/Cargo.toml"]
+
+[release]
+checks = [["cargo", "test"]]
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    config = load_config(tmp_path, Path("rust/gearu.toml"))
+
+    assert config.project.name == "demo-cli"
+    assert config.project.tag_prefix == "rust/v"
+    assert config.rust is not None
+    assert config.rust.manifests[0].path == Path("rust/Cargo.toml")
+
+
+def test_alternate_config_errors_name_the_file(tmp_path: Path) -> None:
+    with pytest.raises(GearuError, match="no rust/gearu.toml found"):
+        load_config(tmp_path, Path("rust/gearu.toml"))
+
+    (tmp_path / "rust").mkdir()
+    (tmp_path / "rust" / "gearu.toml").write_text("[project\n", encoding="utf-8")
+    with pytest.raises(GearuError, match="invalid rust/gearu.toml"):
+        load_config(tmp_path, Path("rust/gearu.toml"))
+
+
+@pytest.mark.parametrize("path", ["../gearu.toml", "/etc/gearu.toml"])
+def test_config_path_must_stay_inside_the_repository(tmp_path: Path, path: str) -> None:
+    with pytest.raises(GearuError, match="inside the repository"):
+        load_config(tmp_path, Path(path))

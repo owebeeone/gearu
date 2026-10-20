@@ -2,7 +2,9 @@
 
 Each repository managed by Gearu has a `gearu.toml` at its root. Paths are
 relative to that root. Commands are arrays of arguments and are run directly,
-without a shell.
+without a shell. A repository that releases several packages independently
+can give each its own configuration file; see
+[Independent Release Lines](#independent-release-lines).
 
 ## Repository Guidance
 
@@ -35,6 +37,43 @@ source_branch = "main"          # optional branch merged into branch
 `source_branch` supports repositories that maintain a separate release branch.
 Run Gearu while the configured `branch` is checked out. The source branch is
 merged only in the temporary release candidate.
+
+## Independent Release Lines
+
+All packages configured in one file share one version and one tag. To release
+packages on their own schedules from the same repository (for example a Python
+library tagged `vX.Y.Z` and a Rust CLI tagged `rust/vX.Y.Z`), give each release
+line its own configuration file with its own `tag_prefix`, and select it with
+`--config`:
+
+```toml
+# rust/gearu.toml
+[project]
+name = "example-cli"
+tag_prefix = "rust/v"
+github_repo = "owner/example"
+
+[rust]
+manifests = ["rust/Cargo.toml"]     # paths stay relative to the repository root
+lockfile = "rust/Cargo.lock"
+lock_command = ["cargo", "update", "--manifest-path", "rust/Cargo.toml", "--workspace"]
+
+[release]
+checks = [["cargo", "test", "--locked", "--manifest-path", "rust/Cargo.toml"]]
+```
+
+```sh
+gearu plan --bump minor                           # gearu.toml: the Python line, v* tags
+gearu plan --config rust/gearu.toml --bump minor  # the Rust line, rust/v* tags
+```
+
+`--config` takes a path inside the repository and defaults to `gearu.toml` at
+the repository root, which then need not exist. Give every line a distinct
+`tag_prefix`: version selection and tag checks only consider tags that start
+with the line's own prefix and parse as a version after it.
+Paths inside every configuration file are relative to the repository root, and
+release checks run from the repository root. A release commit contains only the
+files managed by that line, so lines never bump each other's versions.
 
 ## Release Checks
 

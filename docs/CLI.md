@@ -42,7 +42,7 @@ options:
 ## `gearu plan`
 
 ```text
-usage: gearu plan [-h] [--repo REPO] [--dependency-tag NAME=TAG]
+usage: gearu plan [-h] [--repo REPO] [--config PATH] [--dependency-tag NAME=TAG]
                   (--bump {major,minor,patch} | version)
 
 positional arguments:
@@ -54,6 +54,9 @@ options:
                         select the next version from configured versions and release
                         tags
   --repo REPO           repository or a path inside it (default: current directory)
+  --config PATH         release configuration inside the repository, for repositories
+                        with several independently released packages (default:
+                        gearu.toml at the repository root)
   --dependency-tag NAME=TAG
                         override one configured dependency tag; repeat as needed
 ```
@@ -61,8 +64,8 @@ options:
 ## `gearu release`
 
 ```text
-usage: gearu release [-h] [--repo REPO] [--dependency-tag NAME=TAG] [--push]
-                     [--github-release]
+usage: gearu release [-h] [--repo REPO] [--config PATH] [--dependency-tag NAME=TAG]
+                     [--push] [--github-release]
                      (--bump {major,minor,patch} | version)
 
 positional arguments:
@@ -74,6 +77,9 @@ options:
                         select the next version from configured versions and release
                         tags
   --repo REPO           repository or a path inside it (default: current directory)
+  --config PATH         release configuration inside the repository, for repositories
+                        with several independently released packages (default:
+                        gearu.toml at the repository root)
   --dependency-tag NAME=TAG
                         override one configured dependency tag; repeat as needed
   --push                atomically push the exact branch commit and tag

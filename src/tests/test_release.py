@@ -157,7 +157,7 @@ def test_release_verifies_and_updates_remote_dependency_tag(tmp_path: Path) -> N
     repo, _remote = make_project(tmp_path / "consumer")
     with (repo / "pyproject.toml").open("a", encoding="utf-8") as manifest:
         manifest.write(
-            f'\n[dependencies]\ncore = {{ git = "{dependency_remote}", tag = "v1.0.0" }}\n'
+            f'\n[dependencies]\ncore = {{ git = "{dependency_remote.as_posix()}", tag = "v1.0.0" }}\n'
         )
     with (repo / "gearu.toml").open("a", encoding="utf-8") as config:
         config.write(
@@ -165,7 +165,7 @@ def test_release_verifies_and_updates_remote_dependency_tag(tmp_path: Path) -> N
 
 [[dependencies]]
 name = "core"
-url = "{dependency_remote}"
+url = "{dependency_remote.as_posix()}"
 tag = "{{tag}}"
 pin_file = "pyproject.toml"
 pin_key = "dependencies.core"
@@ -191,7 +191,7 @@ def test_missing_dependency_tag_stops_before_candidate_changes(tmp_path: Path) -
     repo, _remote = make_project(tmp_path / "consumer")
     with (repo / "gearu.toml").open("a", encoding="utf-8") as config:
         config.write(
-            f'\n[[dependencies]]\nname = "core"\nurl = "{dependency_remote}"\n'
+            f'\n[[dependencies]]\nname = "core"\nurl = "{dependency_remote.as_posix()}"\n'
         )
     git(repo, "add", "gearu.toml")
     git(repo, "commit", "-m", "configure dependency")
@@ -265,7 +265,7 @@ def test_dependency_pin_url_must_match_verified_remote(tmp_path: Path) -> None:
 
 [[dependencies]]
 name = "core"
-url = "{dependency_remote}"
+url = "{dependency_remote.as_posix()}"
 tag = "{{tag}}"
 pin_file = "pyproject.toml"
 pin_key = "dependencies.core"
@@ -378,3 +378,115 @@ def test_bump_uses_version_from_merged_source_branch(tmp_path: Path) -> None:
 
     assert plan.version == "2.1.0"
     assert plan.bump_base == "2.0.0"
+
+
+def add_rust_line(repo: Path, *, version: str = "0.1.0") -> None:
+    """Add a second, independently released package with its own gearu config."""
+    (repo / "cli").mkdir()
+    (repo / "cli" / "Cargo.toml").write_text(
+        f'[package]\nname = "demo-cli"\nversion = "{version}"\nedition = "2021"\n',
+        encoding="utf-8",
+    )
+    (repo / "cli" / "gearu.toml").write_text(
+        """
+[project]
+name = "demo-cli"
+branch = "main"
+remote = "origin"
+tag_prefix = "cli/v"
+
+[rust]
+manifests = ["cli/Cargo.toml"]
+
+[release]
+checks = [["python", "-c", "print('cli ok')"]]
+commit_message = "release {name} {version}"
+""".lstrip(),
+        encoding="utf-8",
+    )
+    git(repo, "add", ".")
+    git(repo, "commit", "-m", "add cli release line")
+    git(repo, "push", "origin", "main")
+
+
+def cli_manager(repo: Path) -> ReleaseManager:
+    config_path = Path("cli/gearu.toml")
+    return ReleaseManager(
+        repo,
+        load_config(repo, config_path),
+        config_path=config_path,
+        log=lambda _message: None,
+    )
+
+
+def test_release_lines_are_versioned_and_tagged_independently(tmp_path: Path) -> None:
+    repo, remote = make_project(tmp_path)
+    add_rust_line(repo)
+
+    python_release = manager(repo).release(
+        None, ReleaseOptions(push=True), bump="minor"
+    )
+    assert python_release.tag == "v1.1.0"
+
+    # The CLI line ignores the Python line's v* tags and bumps from its own version.
+    cli_plan = cli_manager(repo).plan(bump="minor")
+    assert cli_plan.tag == "cli/v0.2.0"
+    assert cli_plan.bump_base == "0.1.0"
+    assert [change.path.as_posix() for change in cli_plan.changes] == ["cli/Cargo.toml"]
+
+    cli_release = cli_manager(repo).release(None, ReleaseOptions(push=True), bump="minor")
+    released = git(repo, "rev-parse", "HEAD").stdout.strip()
+    assert cli_release.tag == "cli/v0.2.0"
+    assert cli_release.target_sha == released
+    assert git(repo, "log", "-1", "--format=%s").stdout.strip() == "release demo-cli 0.2.0"
+    assert git(repo, "show", "--name-only", "--format=", "HEAD").stdout.split() == [
+        "cli/Cargo.toml"
+    ]
+    assert 'version = "0.2.0"' in (repo / "cli" / "Cargo.toml").read_text(encoding="utf-8")
+    assert 'version = "1.1.0"' in (repo / "pyproject.toml").read_text(encoding="utf-8")
+    assert (
+        git(remote, "rev-parse", "refs/tags/cli/v0.2.0^{commit}").stdout.strip()
+        == released
+    )
+
+    # And the Python line ignores the CLI line's cli/v* tags.
+    assert manager(repo).plan(bump="patch").tag == "v1.1.1"
+
+
+def test_cli_selects_release_line_with_config_option(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo, _remote = make_project(tmp_path)
+    add_rust_line(repo)
+
+    assert main(["plan", "--repo", str(repo), "--config", str(repo / "cli" / "gearu.toml"),
+                 "--bump", "patch"]) == 0
+    output = capsys.readouterr().out
+    assert "Project: demo-cli" in output
+    assert "Release: 0.1.1 (cli/v0.1.1)" in output
+    assert "cli/Cargo.toml: 0.1.0 -> 0.1.1" in output
+
+
+def test_cli_config_option_works_without_root_gearu_toml(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo, _remote = make_project(tmp_path)
+    add_rust_line(repo)
+    git(repo, "rm", "-q", "gearu.toml")
+    git(repo, "commit", "-m", "only the cli line")
+    git(repo, "push", "origin", "main")
+
+    assert main(["plan", "--repo", str(repo), "--config", str(repo / "cli" / "gearu.toml"),
+                 "0.3.0"]) == 0
+    assert "Release: 0.3.0 (cli/v0.3.0)" in capsys.readouterr().out
+
+
+def test_cli_rejects_config_outside_repository(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo, _remote = make_project(tmp_path)
+    outside = tmp_path / "elsewhere.toml"
+    outside.write_text((repo / "gearu.toml").read_text(encoding="utf-8"), encoding="utf-8")
+
+    assert main(["plan", "--repo", str(repo), "--config", str(outside), "1.2.3"]) == 1
+    assert "inside the repository" in capsys.readouterr().err
